@@ -1,10 +1,10 @@
 """
-criptografia.py
+encryption.py
 
 Implementation of various cryptography functions.
 
-Author: Filipe Paredes
-Student Number: 202300257
+Author: Filipe Paredes (filipeparedes3@gmail.com)
+
 """
 
 import math

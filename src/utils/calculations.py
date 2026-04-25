@@ -1,10 +1,10 @@
 """
-calculo.py
+calculations.py
 
 Implementation of various mathematical functions.
 
-Author: Filipe Paredes
-Student Number: 202300257
+Author: Filipe Paredes (filipeparedes3@gmail.com)
+
 """
 
 import math

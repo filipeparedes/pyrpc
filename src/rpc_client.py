@@ -1,11 +1,10 @@
 """
-cliente_rpc.py
+rpc_client.py
 
 Client-side implementation of the JSON-RPC 2.0 Protocol.
 Supports dynamic function invocations and interactive arguments.
 
-Author: Filipe Paredes
-Student Number: 202300257
+Author: Filipe Paredes (filipeparedes3@gmail.com)
 
 """
 

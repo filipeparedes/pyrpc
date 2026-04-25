@@ -1,12 +1,11 @@
 """
-servidor_rpc.py
+rpc_server.py
 
 Server implementation of the JSON-RPC 2.0 Protocol.
 Supports function registration, batch requests and multiple concurrent clients
 using sockets and threading.
 
-Author: Filipe Paredes
-Student Number: 202300257
+Author: Filipe Paredes (filipeparedes3@gmail.com)
 
 """
 import socket
