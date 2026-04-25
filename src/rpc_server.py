@@ -109,6 +109,7 @@ class RPCServer:
                 else:
                     try:
                         if isinstance(params, dict) and '__args__' in params:
+                            params = params.copy()
                             real_args = params.pop('__args__')
                             result = func(*real_args, **params)
                         elif isinstance(params, dict):
@@ -150,15 +151,19 @@ class RPCServer:
         print(f"[SERVER] New connection from {addr}")
 
         with conn:
+            buffer = ""
             while True:
-                data = conn.recv(4096)
-                if not data:
+                chunk = conn.recv(4096)
+                if not chunk:
                     break
-                request = data.decode()
-                print(f"[SERVER] Received {request}")
-                response = self.handle_request(request)
-                print(f"[SERVER] Sent {response}")
-                conn.sendall(response.encode())
+                buffer += chunk.decode()
+                """Read each message in buffer (messages are separated by "\n")""" 
+                while "\n" in buffer:
+                    message, buffer = buffer.split("\n", 1)
+                    print(f"[SERVER] Received {message}")
+                    response = self.handle_request(message)
+                    print(f"[SERVER] Sent {response}")
+                    conn.sendall((response + "\n").encode())
 
         with self.lock:
             self.active_clients -= 1

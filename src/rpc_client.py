@@ -48,9 +48,11 @@ class RPCClient:
             "params": arguments,
             "id": str(uuid.uuid4())
         }
-        self.sock.sendall(json.dumps(request).encode())
-        data = self.sock.recv(4096)
-        response = json.loads(data.decode())
+        self.sock.sendall((json.dumps(request) + "\n").encode())
+        data = b""
+        while not data.endswith(b"\n"):
+            data += self.sock.recv(4096)
+        response = json.loads(data.decode().strip())
 
         if isinstance(response, dict):
             if "result" in response:
