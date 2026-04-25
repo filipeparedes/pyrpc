@@ -1,11 +1,10 @@
 """
-cliente_rpc.py
+rpc_client.py
 
 Client-side implementation of the JSON-RPC 2.0 Protocol.
 Supports dynamic function invocations and interactive arguments.
 
-Author: Filipe Paredes
-Student Number: 202300257
+Author: Filipe Paredes (filipeparedes3@gmail.com)
 
 """
 
@@ -48,9 +47,11 @@ class RPCClient:
             "params": arguments,
             "id": str(uuid.uuid4())
         }
-        self.sock.sendall(json.dumps(request).encode())
-        data = self.sock.recv(4096)
-        response = json.loads(data.decode())
+        self.sock.sendall((json.dumps(request) + "\n").encode())
+        data = b""
+        while not data.endswith(b"\n"):
+            data += self.sock.recv(4096)
+        response = json.loads(data.decode().strip())
 
         if isinstance(response, dict):
             if "result" in response:
@@ -129,6 +130,18 @@ class RPCClient:
             except Exception as e:
                 print(f"An error occurred trying to get the result: {format(e)}")
 
+    def close(self):
+        """Closes the connection to the server."""
+        if self.sock:
+            self.sock.close()
+            self.sock = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 if __name__ == "__main__":
-    client = RPCClient()
-    client.dynamic_menu()
+    with RPCClient() as client:
+        client.dynamic_menu()

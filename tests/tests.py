@@ -1,30 +1,23 @@
-"""
-testes.py
-
-Tests for multiple features implemented in the remaining files.
-
-Author: Filipe Paredes
-Student Number: 202300257
-
-"""
-
 import time
 import random
 import threading
+import pytest  
 from multiprocessing import cpu_count
 
-from cliente_rpc import RPCClient
-
-from calculo import (
+from src.rpc_client import RPCClient
+from src.utils.calculations import (
     is_prime, find_max_prime_sequential, find_max_prime_parallel,
     find_next_twin_primes, is_mersenne_prime, prime_factors,
     next_prime, previous_prime
 )
-
-from criptografia import (
+from src.utils.encryption import (
     generate_keys, encrypt, decrypt, crack_key
 )
 
+@pytest.fixture
+def client_id():
+    """Provides a default ID when running via pytest"""
+    return "pytest_runner"
 
 def test_rpc_client(client_id):
     client = RPCClient()
@@ -34,7 +27,7 @@ def test_rpc_client(client_id):
     assert client.is_prime(18) is False
     assert client.next_prime(17) == 19
     assert client.previous_prime(17) == 13
-    assert client.find_next_twin_primes(10) == [11, 13]
+    assert list(client.find_next_twin_primes(10)) == [11, 13] 
     assert client.is_mersenne_prime(31) is True
     assert client.prime_factors(60) == [2, 2, 3, 5]
 
@@ -48,7 +41,6 @@ def test_rpc_client(client_id):
     assert isinstance(cracked, (list, tuple)) and len(cracked) == 2
 
     print(f"[Client {client_id}] Tests passed")
-
 
 def test_rpc():
     # Teste de um cliente
@@ -67,7 +59,6 @@ def test_rpc():
         t.join()
 
     print("\n[Main] All RPC tests passed across multiple clients.")
-
 
 def test_is_prime():
     assert is_prime(2)
@@ -168,20 +159,3 @@ def test_crack_key():
 
     assert decrypted == message
     print(f"crack_key successfully recovered the private key in: {(end_time - start_time):.4f}s")
-
-
-if __name__ == '__main__':
-    print("Running tests...")
-
-    test_is_prime()
-    test_next_previous_prime()
-    test_find_next_twin_primes()
-    test_is_mersenne_prime()
-    test_prime_factors()
-    test_find_max_prime_timed()
-    test_generate_keys_and_encrypt_decrypt()
-    test_encrypt_invalid_message()
-    test_crack_key()
-    test_rpc()
-
-    print("\nAll tests completed.")

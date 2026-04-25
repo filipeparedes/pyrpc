@@ -1,23 +1,24 @@
 """
-servidor_rpc.py
+rpc_server.py
 
 Server implementation of the JSON-RPC 2.0 Protocol.
 Supports function registration, batch requests and multiple concurrent clients
 using sockets and threading.
 
-Author: Filipe Paredes
-Student Number: 202300257
+Author: Filipe Paredes (filipeparedes3@gmail.com)
 
 """
 import socket
 import json
 import threading
 import time
-
 import inspect
-import calculo
-import criptografia
+import logging
 
+try:
+    from utils import calculations, encryption
+except ImportError:
+    from src.utils import calculations, encryption
 
 class RPCServer:
     """
@@ -25,13 +26,19 @@ class RPCServer:
     and executes registered functions concurrently.
     """
 
+    logging.basicConfig(
+                level=logging.INFO,
+                format="%(asctime)s [%(levelname)s] %(message)s"
+            )
+    logger = logging.getLogger(__name__)
+
     def __init__(self, host='localhost', port=8000):
         """Initializes the RPC Server"""
         self.host = host
         self.port = port
         self.funcs = {}
         self.running = True
-        self.server_socker = None
+        self.server_socket = None
         self.active_clients = 0
         self.lock = threading.Lock()
         self.shutdown_requested = False
@@ -39,7 +46,7 @@ class RPCServer:
 
     def register_functions(self):
         """Automatically register all public functions from calculo.py and criptografia.py"""
-        for module in (calculo, criptografia):
+        for module in (calculations, encryption):
             for name, func in inspect.getmembers(module, inspect.isfunction):
                 if not name.startswith('_'):
                     self.register(name, func)
@@ -47,7 +54,7 @@ class RPCServer:
     def register(self, name, func):
         """Register a single function with a given name"""
         self.funcs[name] = func
-        print(f"[SERVER] Registered function: {name}")
+        RPCServer.logger.info(f"[SERVER] Registered function: {name}")
 
     def list_functions(self):
         """Returns a detailed list of the registered functions"""
@@ -107,6 +114,7 @@ class RPCServer:
                 else:
                     try:
                         if isinstance(params, dict) and '__args__' in params:
+                            params = params.copy()
                             real_args = params.pop('__args__')
                             result = func(*real_args, **params)
                         elif isinstance(params, dict):
@@ -145,48 +153,52 @@ class RPCServer:
         """Serve a single client connection."""
         with self.lock:
             self.active_clients += 1
-        print(f"[SERVER] New connection from {addr}")
+        RPCServer.logger.info(f"[SERVER] New connection from {addr}")
 
         with conn:
+            buffer = ""
             while True:
-                data = conn.recv(4096)
-                if not data:
+                chunk = conn.recv(4096)
+                if not chunk:
                     break
-                request = data.decode()
-                print(f"[SERVER] Received {request}")
-                response = self.handle_request(request)
-                print(f"[SERVER] Sent {response}")
-                conn.sendall(response.encode())
+                buffer += chunk.decode()
+                """Read each message in buffer (messages are separated by "\n")""" 
+                while "\n" in buffer:
+                    message, buffer = buffer.split("\n", 1)
+                    RPCServer.logger.debug(f"[SERVER] Received {message}")
+                    response = self.handle_request(message)
+                    RPCServer.logger.debug(f"[SERVER] Sent {response}")
+                    conn.sendall((response + "\n").encode())
 
         with self.lock:
             self.active_clients -= 1
 
     def start(self):
         """Starts the server."""
-        print("[SERVER] Starting server...")
+        RPCServer.logger.info("[SERVER] Starting server...")
         print(f"[SERVER] Listening on {self.host}:{self.port}.")
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.host, self.port))
             s.listen()
-            self.server_socker = s
+            self.server_socket = s
             s.settimeout(1)
 
             while not self.shutdown_requested:
                 try:
                     conn, addr = s.accept()
-                    print(f"[SERVER] Accepted connection from {addr}")
+                    RPCServer.logger.info(f"[SERVER] Accepted connection from {addr}")
                     threading.Thread(target=self.client_thread, args=(conn, addr)).start()
                 except socket.timeout:
                     continue
 
-            print("[SERVER] Waiting to conclude client connections...")
+            RPCServer.logger.info("[SERVER] Waiting to conclude client connections...")
             while True:
                 with self.lock:
                     if self.active_clients == 0:
                         break
                 time.sleep(0.5)
-            print("[SERVER] Shutting down server.")
+            RPCServer.logger.info("[SERVER] Shutting down server.")
 
 
 if __name__ == '__main__':
