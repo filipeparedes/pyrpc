@@ -13,10 +13,12 @@ import socket
 import json
 import threading
 import time
-
 import inspect
-import calculo
-import criptografia
+
+try:
+    from utils import calculations, encryption
+except ImportError:
+    from src.utils import calculations, encryption
 
 
 class RPCServer:
@@ -39,7 +41,7 @@ class RPCServer:
 
     def register_functions(self):
         """Automatically register all public functions from calculo.py and criptografia.py"""
-        for module in (calculo, criptografia):
+        for module in (calculations, encryption):
             for name, func in inspect.getmembers(module, inspect.isfunction):
                 if not name.startswith('_'):
                     self.register(name, func)

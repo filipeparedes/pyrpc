@@ -12,14 +12,17 @@ import random
 import time
 from typing import Tuple, Optional
 from multiprocessing import Process, Value, cpu_count, Array
-import calculo
 
+try:
+    from utils import calculations
+except ImportError:
+    from src.utils import calculations
 
 def _generate_large_prime(bits: int) -> int:
     while True:
         num = random.getrandbits(bits)
         num |= (1 << bits - 1) | 1  # Garante que tem o bit mais alto e é ímpar
-        if calculo.is_prime(num):
+        if calculations.is_prime(num):
             return num
 
 
