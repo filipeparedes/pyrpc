@@ -131,6 +131,18 @@ class RPCClient:
             except Exception as e:
                 print(f"An error occurred trying to get the result: {format(e)}")
 
+    def close(self):
+        """Closes the connection to the server."""
+        if self.sock:
+            self.sock.close()
+            self.sock = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 if __name__ == "__main__":
-    client = RPCClient()
-    client.dynamic_menu()
+    with RPCClient() as client:
+        client.dynamic_menu()

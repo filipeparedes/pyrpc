@@ -14,12 +14,12 @@ import json
 import threading
 import time
 import inspect
+import logging
 
 try:
     from utils import calculations, encryption
 except ImportError:
     from src.utils import calculations, encryption
-
 
 class RPCServer:
     """
@@ -27,13 +27,19 @@ class RPCServer:
     and executes registered functions concurrently.
     """
 
+    logging.basicConfig(
+                level=logging.INFO,
+                format="%(asctime)s [%(levelname)s] %(message)s"
+            )
+    logger = logging.getLogger(__name__)
+
     def __init__(self, host='localhost', port=8000):
         """Initializes the RPC Server"""
         self.host = host
         self.port = port
         self.funcs = {}
         self.running = True
-        self.server_socker = None
+        self.server_socket = None
         self.active_clients = 0
         self.lock = threading.Lock()
         self.shutdown_requested = False
@@ -49,7 +55,7 @@ class RPCServer:
     def register(self, name, func):
         """Register a single function with a given name"""
         self.funcs[name] = func
-        print(f"[SERVER] Registered function: {name}")
+        RPCServer.logger.info(f"[SERVER] Registered function: {name}")
 
     def list_functions(self):
         """Returns a detailed list of the registered functions"""
@@ -148,7 +154,7 @@ class RPCServer:
         """Serve a single client connection."""
         with self.lock:
             self.active_clients += 1
-        print(f"[SERVER] New connection from {addr}")
+        RPCServer.logger.info(f"[SERVER] New connection from {addr}")
 
         with conn:
             buffer = ""
@@ -160,9 +166,9 @@ class RPCServer:
                 """Read each message in buffer (messages are separated by "\n")""" 
                 while "\n" in buffer:
                     message, buffer = buffer.split("\n", 1)
-                    print(f"[SERVER] Received {message}")
+                    RPCServer.logger.debug(f"[SERVER] Received {message}")
                     response = self.handle_request(message)
-                    print(f"[SERVER] Sent {response}")
+                    RPCServer.logger.debug(f"[SERVER] Sent {response}")
                     conn.sendall((response + "\n").encode())
 
         with self.lock:
@@ -170,30 +176,30 @@ class RPCServer:
 
     def start(self):
         """Starts the server."""
-        print("[SERVER] Starting server...")
+        RPCServer.logger.info("[SERVER] Starting server...")
         print(f"[SERVER] Listening on {self.host}:{self.port}.")
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.host, self.port))
             s.listen()
-            self.server_socker = s
+            self.server_socket = s
             s.settimeout(1)
 
             while not self.shutdown_requested:
                 try:
                     conn, addr = s.accept()
-                    print(f"[SERVER] Accepted connection from {addr}")
+                    RPCServer.logger.info(f"[SERVER] Accepted connection from {addr}")
                     threading.Thread(target=self.client_thread, args=(conn, addr)).start()
                 except socket.timeout:
                     continue
 
-            print("[SERVER] Waiting to conclude client connections...")
+            RPCServer.logger.info("[SERVER] Waiting to conclude client connections...")
             while True:
                 with self.lock:
                     if self.active_clients == 0:
                         break
                 time.sleep(0.5)
-            print("[SERVER] Shutting down server.")
+            RPCServer.logger.info("[SERVER] Shutting down server.")
 
 
 if __name__ == '__main__':
